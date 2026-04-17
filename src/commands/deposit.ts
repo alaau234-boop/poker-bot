@@ -39,7 +39,6 @@ export async function handleDepositButton(ctx: BotContext): Promise<void> {
 
     await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: mainMenuMarkup });
     await ctx.answerCbQuery();
-    await ctx.reply('👇 type below.');
   } catch (err) {
     console.error('[deposit_btn]', err);
     await ctx.answerCbQuery('Something went wrong.');
