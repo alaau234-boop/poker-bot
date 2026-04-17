@@ -281,6 +281,8 @@ CREATE TABLE IF NOT EXISTS join_requests (
 
 ALTER TABLE join_requests DISABLE ROW LEVEL SECURITY;
 
+ALTER TABLE join_requests ADD COLUMN IF NOT EXISTS old_player_app_id TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_join_requests_telegram_id ON join_requests(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_join_requests_status      ON join_requests(status);
 
@@ -322,7 +324,28 @@ INSERT INTO bot_messages (key, value, description) VALUES
 
   ('join_rejected',
    '❌ Your Player ID request was rejected. Please contact admin.',
-   'DM sent to player when join request is rejected')
+   'DM sent to player when join request is rejected'),
+
+  ('already_registered_change',
+   '✅ You are already registered with Player ID: <b>{player_id}</b>'
+   || E'\n\n' || 'Would you like to change your Player ID?',
+   'Shown when registered user taps Register / Join Club'),
+
+  ('change_playerid_prompt',
+   'Enter your new Player ID:',
+   'Asked when user confirms Player ID change'),
+
+  ('change_submitted',
+   '✅ Change request submitted! Awaiting admin approval.',
+   'Shown after player ID change request is submitted'),
+
+  ('change_approved',
+   '✅ Your Player ID has been updated to <b>{player_id}</b>!',
+   'DM sent to player when change request is approved'),
+
+  ('change_rejected',
+   '❌ Your Player ID change request was rejected. Please contact admin.',
+   'DM sent to player when change request is rejected')
 ON CONFLICT (key) DO UPDATE
   SET value       = EXCLUDED.value,
       description = EXCLUDED.description;

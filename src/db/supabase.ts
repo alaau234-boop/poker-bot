@@ -145,10 +145,16 @@ export async function getPlayerByAppId(playerAppId: string): Promise<Player | nu
 export async function createJoinRequest(
   telegramId: number,
   playerAppId: string,
+  oldPlayerAppId?: string,
 ): Promise<JoinRequest> {
   const { data, error } = await supabase
     .from('join_requests')
-    .insert({ telegram_id: telegramId, player_app_id: playerAppId, status: 'pending' })
+    .insert({
+      telegram_id: telegramId,
+      player_app_id: playerAppId,
+      old_player_app_id: oldPlayerAppId ?? null,
+      status: 'pending',
+    })
     .select()
     .single();
   if (error) throw error;

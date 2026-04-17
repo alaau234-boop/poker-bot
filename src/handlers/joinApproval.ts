@@ -9,7 +9,7 @@ import { BotContext } from '../types';
 import { mainMenuMarkup } from '../keyboards';
 
 /**
- * Handles ✅ / ❌ inline button presses for Player ID registration requests.
+ * Handles ✅ / ❌ inline button presses for Player ID registration and change requests.
  *
  * Callback data format:  <action>_join_<requestId>
  *   action    : "approve" | "reject"
@@ -46,20 +46,24 @@ export async function handleJoinApproval(ctx: BotContext): Promise<void> {
       return;
     }
 
+    const isChange = request.old_player_app_id !== null;
+
     if (action === 'approve') {
       await approveJoinRequest(requestId, ctx.from.id, request.telegram_id, request.player_app_id);
 
-      const text = await getBotMessage('join_approved');
+      const msgKey = isChange ? 'change_approved' : 'join_approved';
+      const text   = await getBotMessage(msgKey, { player_id: request.player_app_id });
       await ctx.telegram.sendMessage(request.telegram_id, text, {
         parse_mode: 'HTML',
         reply_markup: mainMenuMarkup,
       });
 
-      await ctx.answerCbQuery('✅ Player ID approved');
+      await ctx.answerCbQuery(isChange ? '✅ Player ID updated' : '✅ Player ID approved');
     } else {
       await rejectJoinRequest(requestId, ctx.from.id);
 
-      const text = await getBotMessage('join_rejected');
+      const msgKey = isChange ? 'change_rejected' : 'join_rejected';
+      const text   = await getBotMessage(msgKey);
       await ctx.telegram.sendMessage(request.telegram_id, text, {
         parse_mode: 'HTML',
         reply_markup: mainMenuMarkup,

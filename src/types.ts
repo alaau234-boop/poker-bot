@@ -9,7 +9,8 @@ export interface SessionData {
     | 'waiting_withdraw_amount'
     | 'waiting_withdraw_player_id'
     | 'waiting_withdraw_bank_account'
-    | 'waiting_join_player_id';
+    | 'waiting_join_player_id'
+    | 'waiting_change_player_id';
 
   /** Telegram file_id of the uploaded deposit receipt. */
   depositReceiptFileId?: string;
@@ -53,6 +54,7 @@ export interface JoinRequest {
   id: number;
   telegram_id: number;
   player_app_id: string;
+  old_player_app_id: string | null;
   status: 'pending' | 'approved' | 'rejected';
   message_id: number | null;
   admin_id: number | null;

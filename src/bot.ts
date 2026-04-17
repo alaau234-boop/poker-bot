@@ -18,7 +18,12 @@ import {
   handleWithdrawPlayerId,
   handleWithdrawBankAccount,
 } from './commands/withdraw';
-import { handleJoinButton, handleJoinPlayerId } from './commands/join';
+import {
+  handleJoinButton,
+  handleJoinPlayerId,
+  handleChangePlayerIdButton,
+  handleChangePlayerId,
+} from './commands/join';
 import { handleClubsButton }    from './commands/clubs';
 import { handleAdminApproval }  from './handlers/adminApproval';
 import { handleJoinApproval }   from './handlers/joinApproval';
@@ -65,7 +70,8 @@ bot.action('main_menu',        handleMainMenu);
 bot.action('deposit_btn',      handleDepositButton);
 bot.action('withdraw_btn',     handleWithdrawButton);
 bot.action('proceed_withdraw', handleProceedWithdraw);
-bot.action('join_btn',         handleJoinButton);
+bot.action('join_btn',              handleJoinButton);
+bot.action('change_player_id_btn',  handleChangePlayerIdButton);
 bot.action('clubs_btn',        handleClubsButton);
 
 // ── Inline keyboard actions (admin approve / reject) ─────────────────────────
@@ -90,6 +96,7 @@ bot.on(message('text'), async (ctx) => {
     case 'waiting_withdraw_player_id':   await handleWithdrawPlayerId(ctx);    break;
     case 'waiting_withdraw_bank_account':await handleWithdrawBankAccount(ctx); break;
     case 'waiting_join_player_id':       await handleJoinPlayerId(ctx);        break;
+    case 'waiting_change_player_id':     await handleChangePlayerId(ctx);      break;
   }
 });
 
