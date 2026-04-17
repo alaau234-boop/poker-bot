@@ -6,7 +6,6 @@ export interface SessionData {
   step?:
     | 'waiting_deposit_receipt'
     | 'waiting_deposit_amount'
-    | 'waiting_deposit_player_id'
     | 'waiting_withdraw_amount'
     | 'waiting_withdraw_player_id'
     | 'waiting_withdraw_bank_account'
@@ -16,9 +15,6 @@ export interface SessionData {
   depositReceiptFileId?: string;
   /** True if the receipt was sent as a document rather than a photo. */
   depositReceiptIsDocument?: boolean;
-  /** Deposit chip amount captured before player ID is entered. */
-  depositAmount?: number;
-
   /** Withdrawal chip amount captured in step 1. */
   withdrawAmount?: number;
   /** Player app ID captured in step 2 of withdrawal. */

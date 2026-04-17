@@ -10,7 +10,6 @@ import {
   handleDepositPhoto,
   handleDepositDocument,
   handleDepositAmount,
-  handleDepositPlayerId,
 } from './commands/deposit';
 import {
   handleWithdrawButton,
@@ -87,7 +86,6 @@ bot.on(message('document'), async (ctx) => {
 bot.on(message('text'), async (ctx) => {
   switch (ctx.session.step) {
     case 'waiting_deposit_amount':       await handleDepositAmount(ctx);       break;
-    case 'waiting_deposit_player_id':    await handleDepositPlayerId(ctx);     break;
     case 'waiting_withdraw_amount':      await handleWithdrawAmount(ctx);      break;
     case 'waiting_withdraw_player_id':   await handleWithdrawPlayerId(ctx);    break;
     case 'waiting_withdraw_bank_account':await handleWithdrawBankAccount(ctx); break;

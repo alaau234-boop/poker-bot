@@ -4,7 +4,6 @@ import {
   createTransaction,
   getActiveClubs,
   getBotMessage,
-  getOrCreatePlayerByAppId,
   getPlayerByTelegramId,
   updateTransactionMessageId,
 } from '../db/supabase';
@@ -89,10 +88,10 @@ export async function handleDepositDocument(
   await processReceipt(ctx as BotContext, ctx.message.document.file_id, true);
 }
 
-// ── Step 2 — deposit amount ───────────────────────────────────────────────────
+// ── Step 2 — deposit amount → create transaction ──────────────────────────────
 
 export async function handleDepositAmount(ctx: BotContext): Promise<void> {
-  if (!ctx.message || !('text' in ctx.message)) return;
+  if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
 
   const amount = parseFloat(ctx.message.text.trim());
   if (isNaN(amount) || amount <= 0) {
@@ -100,43 +99,29 @@ export async function handleDepositAmount(ctx: BotContext): Promise<void> {
     return;
   }
 
-  ctx.session.depositAmount = amount;
-  ctx.session.step = 'waiting_deposit_player_id';
-
-  const text = await getBotMessage('deposit_playerid_prompt');
-  await ctx.reply(text, { parse_mode: 'HTML' });
-  await ctx.reply('👇 type below.');
-}
-
-// ── Step 3 — player ID → create transaction ───────────────────────────────────
-
-export async function handleDepositPlayerId(ctx: BotContext): Promise<void> {
-  if (!ctx.from || !ctx.message || !('text' in ctx.message)) return;
-
-  const playerAppId = ctx.message.text.trim();
-  if (!playerAppId) {
-    await ctx.reply('Player ID cannot be empty. Please try again.');
-    return;
-  }
-
   const receiptFileId = ctx.session.depositReceiptFileId;
   const isDocument   = ctx.session.depositReceiptIsDocument ?? false;
-  const amount       = ctx.session.depositAmount;
 
-  if (!receiptFileId || amount === undefined) {
+  if (!receiptFileId) {
     ctx.session.step = undefined;
     await ctx.reply('Something went wrong. Please start again with /start.');
     return;
   }
 
   try {
-    const player      = await getOrCreatePlayerByAppId(playerAppId, ctx.from.id);
+    const player = await getPlayerByTelegramId(ctx.from.id);
+    if (!player?.player_app_id) {
+      ctx.session.step = undefined;
+      await ctx.reply('Registration not found. Please start again with /start.');
+      return;
+    }
+
     const transaction = await createTransaction(player.id, 'deposit', amount, receiptFileId);
 
     const groupId = parseInt(process.env.GROUP_ID!);
     const caption =
       `<b>New Deposit Request</b>\n\n` +
-      `Player ID: <code>${playerAppId}</code>\n` +
+      `Player ID: <code>${player.player_app_id}</code>\n` +
       `Amount: <b>${amount}</b> chips\n\n` +
       `Transaction #${transaction.id}`;
 
@@ -164,12 +149,11 @@ export async function handleDepositPlayerId(ctx: BotContext): Promise<void> {
     ctx.session.step                    = undefined;
     ctx.session.depositReceiptFileId    = undefined;
     ctx.session.depositReceiptIsDocument = undefined;
-    ctx.session.depositAmount           = undefined;
 
     const confirmation = await getBotMessage('deposit_submitted');
     await ctx.reply(confirmation, { parse_mode: 'HTML', reply_markup: mainMenuMarkup });
   } catch (err) {
-    console.error('[deposit_player_id]', err);
+    console.error('[deposit_amount]', err);
     await ctx.reply('Failed to process your deposit. Please start again with /start.');
     ctx.session.step = undefined;
   }
