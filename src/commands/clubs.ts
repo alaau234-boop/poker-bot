@@ -1,28 +1,31 @@
 import { getActiveClubs } from '../db/supabase';
 import { BotContext } from '../types';
+import { mainMenuMarkup } from '../keyboards';
 
-export async function clubsCommand(ctx: BotContext): Promise<void> {
+export async function handleClubsButton(ctx: BotContext): Promise<void> {
   try {
     const clubs = await getActiveClubs();
 
     if (clubs.length === 0) {
-      await ctx.reply('No active clubs at the moment. Please check back later.');
+      await ctx.editMessageText('No active clubs at the moment.', { reply_markup: mainMenuMarkup });
+      await ctx.answerCbQuery();
       return;
     }
 
     const lines = clubs.map(
       (c) =>
-        `🎰 <b>${c.name}</b>\n` +
-        `  Club ID: <code>${c.club_id}</code>\n` +
-        `  Chip Rate: ${c.chip_rate} chips per unit`,
+        `<b>${c.name}</b>\n` +
+        `Club ID: <code>${c.club_id}</code>\n` +
+        `Rate: ${c.chip_rate} chips per unit`,
     );
 
-    await ctx.reply(
-      `🃏 <b>Active Clubs</b>\n\n${lines.join('\n\n')}`,
-      { parse_mode: 'HTML' },
+    await ctx.editMessageText(
+      `<b>Active Clubs</b>\n\n${lines.join('\n\n')}`,
+      { parse_mode: 'HTML', reply_markup: mainMenuMarkup },
     );
+    await ctx.answerCbQuery();
   } catch (err) {
-    console.error('[clubs] error:', err);
-    await ctx.reply('Failed to fetch clubs. Please try again.');
+    console.error('[clubs_btn]', err);
+    await ctx.answerCbQuery('Something went wrong.');
   }
 }

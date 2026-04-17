@@ -1,18 +1,28 @@
 import { Context } from 'telegraf';
 
-// ── Session ──────────────────────────────────────────────────────────────────
+// ── Session ───────────────────────────────────────────────────────────────────
 
 export interface SessionData {
-  /** Tracks the current conversational step for this user in this chat. */
   step?:
+    | 'waiting_deposit_receipt'
     | 'waiting_deposit_amount'
-    | 'waiting_receipt'
+    | 'waiting_deposit_player_id'
     | 'waiting_withdraw_amount'
-    | 'waiting_withdraw_app_id';
-  /** Deposit amount captured before the receipt photo is sent. */
+    | 'waiting_withdraw_player_id'
+    | 'waiting_withdraw_bank_account'
+    | 'waiting_balance_player_id';
+
+  /** Telegram file_id of the uploaded deposit receipt. */
+  depositReceiptFileId?: string;
+  /** True if the receipt was sent as a document rather than a photo. */
+  depositReceiptIsDocument?: boolean;
+  /** Deposit chip amount captured before player ID is entered. */
   depositAmount?: number;
-  /** Withdrawal amount captured before the app ID is provided. */
+
+  /** Withdrawal chip amount captured in step 1. */
   withdrawAmount?: number;
+  /** Player app ID captured in step 2 of withdrawal. */
+  withdrawPlayerId?: string;
 }
 
 export interface BotContext extends Context {
@@ -39,6 +49,7 @@ export interface Transaction {
   receipt_file_id: string | null;
   message_id: number | null;
   admin_id: number | null;
+  bank_account: string | null;
   created_at: string;
 }
 

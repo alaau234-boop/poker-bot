@@ -164,3 +164,103 @@ INSERT INTO bot_messages (key, value, description) VALUES
   ('balance_message',        '💰 Balance for {username} — Chips: {balance}',                                                     'Shown for /balance command'),
   ('no_account_message',     'No account found. Use /deposit to get started.',                                                    'Shown when player not found')
 ON CONFLICT (key) DO NOTHING;
+
+-- ============================================================
+-- Inline-keyboard flow — schema + message updates
+-- Run these after the initial schema if updating an existing DB
+-- ============================================================
+
+-- Add bank_account column to transactions (for withdrawal requests)
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS bank_account TEXT;
+
+-- Partial unique index on player_app_id (NULLs are exempt)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_players_player_app_id
+  ON players(player_app_id) WHERE player_app_id IS NOT NULL;
+
+-- New bot_messages keys for the inline-keyboard flow
+INSERT INTO bot_messages (key, value, description) VALUES
+  ('start_welcome',
+   'What would you like to do?',
+   'Shown under club list on /start'),
+
+  ('deposit_instructions',
+   'To deposit, kindly transfer funds to the bank details shown below and send us your payment receipt.'
+   || E'\n\n' || 'Minimum deposit: 20 MVR'
+   || E'\n\n' || 'Bank details may be updated from time to time. Please confirm before sending.'
+   || E'\n\n' || 'Kindly share your deposit receipt (photo, screenshot, or document).',
+   'Shown when Deposit button is tapped (bank details appended by bot)'),
+
+  ('deposit_amount_prompt',
+   'Please enter the deposit amount:',
+   'Asked after receipt is uploaded'),
+
+  ('deposit_playerid_prompt',
+   'Please enter your Player ID:',
+   'Asked after deposit amount'),
+
+  ('withdraw_instructions',
+   'Before you proceed:'
+   || E'\n\n' || E'\u2022 The minimum withdrawal is 200 MVR'
+   || E'\n' || E'\u2022 Withdrawals are sent to the same bank account you deposited from',
+   'Shown when Withdraw button is tapped'),
+
+  ('withdraw_amount_prompt',
+   'How much would you like to withdraw?',
+   'Asked after user clicks Proceed'),
+
+  ('withdraw_playerid_prompt',
+   'Enter your Player ID:',
+   'Asked after withdrawal amount'),
+
+  ('withdraw_bankaccount_prompt',
+   'Enter your bank account number:',
+   'Asked after withdrawal player ID'),
+
+  ('balance_playerid_prompt',
+   'Enter your Player ID to check your balance:',
+   'Asked when My Balance button is tapped')
+ON CONFLICT (key) DO NOTHING;
+
+-- Update existing messages: remove {username}, use {amount}/{player_id} only
+-- DO UPDATE ensures existing deployments also get the corrected values
+INSERT INTO bot_messages (key, value, description) VALUES
+  ('deposit_submitted',
+   'Receipt submitted! Awaiting admin approval.',
+   'Shown after receipt submitted'),
+
+  ('deposit_approved',
+   'Your deposit of {amount} chips has been approved! Your balance has been updated.',
+   'DM sent to player on deposit approval'),
+
+  ('deposit_rejected',
+   'Your deposit was rejected. Please contact admin.',
+   'DM sent to player on deposit rejection'),
+
+  ('withdraw_submitted',
+   'Withdrawal request submitted.'
+   || E'\n' || 'Your funds will be transferred within 10-30 minutes.'
+   || E'\n\n' || 'Please avoid sending multiple messages. Repeated messages may slow down processing. Thank you for your patience!',
+   'Confirmation shown after withdrawal submitted'),
+
+  ('withdraw_approved',
+   'Your withdrawal of {amount} chips has been approved!',
+   'DM sent to player on withdrawal approval'),
+
+  ('withdraw_rejected',
+   'Your withdrawal request was rejected. Please contact admin.',
+   'DM sent to player on withdrawal rejection'),
+
+  ('insufficient_balance',
+   'Insufficient balance for this withdrawal.',
+   'DM sent when withdrawal balance check fails'),
+
+  ('balance_message',
+   'Balance for <b>{player_id}</b>: {balance} chips',
+   'Shown after balance lookup'),
+
+  ('no_account_message',
+   'No account found for that Player ID.',
+   'Shown when player_app_id lookup returns nothing')
+ON CONFLICT (key) DO UPDATE
+  SET value       = EXCLUDED.value,
+      description = EXCLUDED.description;

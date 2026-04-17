@@ -4,11 +4,24 @@ import { message } from 'telegraf/filters';
 import express from 'express';
 
 import { BotContext, SessionData } from './types';
-import { depositCommand, handleDepositAmount, handleReceiptPhoto } from './commands/deposit';
-import { withdrawCommand, handleWithdrawAmount, handleWithdrawAppId } from './commands/withdraw';
-import { balanceCommand } from './commands/balance';
-import { clubsCommand } from './commands/clubs';
-import { handleAdminApproval } from './handlers/adminApproval';
+import { startCommand, handleMainMenu }       from './commands/start';
+import {
+  handleDepositButton,
+  handleDepositPhoto,
+  handleDepositDocument,
+  handleDepositAmount,
+  handleDepositPlayerId,
+} from './commands/deposit';
+import {
+  handleWithdrawButton,
+  handleProceedWithdraw,
+  handleWithdrawAmount,
+  handleWithdrawPlayerId,
+  handleWithdrawBankAccount,
+} from './commands/withdraw';
+import { handleBalanceButton, handleBalancePlayerId } from './commands/balance';
+import { handleClubsButton }    from './commands/clubs';
+import { handleAdminApproval }  from './handlers/adminApproval';
 
 // ── Environment validation ────────────────────────────────────────────────────
 
@@ -36,7 +49,6 @@ const PORT = parseInt(PORT_ENV ?? '3000', 10);
 
 const bot = new Telegraf<BotContext>(BOT_TOKEN!);
 
-// Session middleware — keyed by chatId:userId by default
 bot.use(
   session<SessionData, BotContext>({
     defaultSession: (): SessionData => ({}),
@@ -45,38 +57,41 @@ bot.use(
 
 // ── Commands ──────────────────────────────────────────────────────────────────
 
-bot.command('deposit', depositCommand);
-bot.command('withdraw', withdrawCommand);
-bot.command('balance', balanceCommand);
-bot.command('clubs', clubsCommand);
+bot.command('start', startCommand);
+
+// ── Inline keyboard actions (user-facing) ────────────────────────────────────
+
+bot.action('main_menu',        handleMainMenu);
+bot.action('deposit_btn',      handleDepositButton);
+bot.action('withdraw_btn',     handleWithdrawButton);
+bot.action('proceed_withdraw', handleProceedWithdraw);
+bot.action('balance_btn',      handleBalanceButton);
+bot.action('clubs_btn',        handleClubsButton);
+
+// ── Inline keyboard actions (admin approve / reject) ─────────────────────────
+
+bot.action(/^(approve|reject)_(dep|wd)_\d+$/, handleAdminApproval);
 
 // ── Message handlers (session-driven flows) ───────────────────────────────────
 
-// Photo → deposit receipt capture
 bot.on(message('photo'), async (ctx) => {
-  if (ctx.session.step !== 'waiting_receipt') return;
-  await handleReceiptPhoto(ctx);
+  if (ctx.session.step === 'waiting_deposit_receipt') await handleDepositPhoto(ctx);
 });
 
-// Text → deposit / withdraw conversational steps
+bot.on(message('document'), async (ctx) => {
+  if (ctx.session.step === 'waiting_deposit_receipt') await handleDepositDocument(ctx);
+});
+
 bot.on(message('text'), async (ctx) => {
   switch (ctx.session.step) {
-    case 'waiting_deposit_amount':
-      await handleDepositAmount(ctx);
-      break;
-    case 'waiting_withdraw_amount':
-      await handleWithdrawAmount(ctx);
-      break;
-    case 'waiting_withdraw_app_id':
-      await handleWithdrawAppId(ctx);
-      break;
-    // No session step — ignore plain text
+    case 'waiting_deposit_amount':       await handleDepositAmount(ctx);       break;
+    case 'waiting_deposit_player_id':    await handleDepositPlayerId(ctx);     break;
+    case 'waiting_withdraw_amount':      await handleWithdrawAmount(ctx);      break;
+    case 'waiting_withdraw_player_id':   await handleWithdrawPlayerId(ctx);    break;
+    case 'waiting_withdraw_bank_account':await handleWithdrawBankAccount(ctx); break;
+    case 'waiting_balance_player_id':    await handleBalancePlayerId(ctx);     break;
   }
 });
-
-// ── Callback queries (admin approve / reject buttons) ─────────────────────────
-
-bot.on('callback_query', handleAdminApproval);
 
 // ── Error handler ─────────────────────────────────────────────────────────────
 
@@ -89,7 +104,7 @@ bot.catch((err, ctx) => {
 (async () => {
   try {
     if (PUBLIC_DOMAIN) {
-      // ── Webhook mode (production on Railway / any host) ───────────────────
+      // ── Webhook mode (production) ─────────────────────────────────────────
       const webhookPath = `/webhook/${BOT_TOKEN}`;
       const webhookUrl  = `https://${PUBLIC_DOMAIN}${webhookPath}`;
 
@@ -98,8 +113,7 @@ bot.catch((err, ctx) => {
       app.use(bot.webhookCallback(webhookPath));
       app.get('/', (_req, res) => res.json({ status: 'ok' }));
 
-      // Start the HTTP server first so the port is open before Telegram
-      // tries to deliver the first update after setWebhook is called.
+      // Server must be listening before Telegram sends the first update.
       await new Promise<void>((resolve) => {
         app.listen(PORT, () => {
           console.log(`Server listening on port ${PORT}`);
@@ -107,19 +121,16 @@ bot.catch((err, ctx) => {
         });
       });
 
-      // Register the webhook now that the server is accepting connections.
       console.log(`Registering webhook → ${webhookUrl}`);
-      const ok = await bot.telegram.setWebhook(webhookUrl);
+      const ok   = await bot.telegram.setWebhook(webhookUrl);
       console.log(`setWebhook result: ${ok}`);
 
-      // Confirm what Telegram has on record.
       const info = await bot.telegram.getWebhookInfo();
       console.log(`Webhook URL on Telegram: ${info.url}`);
       console.log(`Pending updates: ${info.pending_update_count}`);
     } else {
-      // ── Long-polling mode (local development) ────────────────────────────
+      // ── Long-polling mode (local development) ─────────────────────────────
       console.log('PUBLIC_DOMAIN not set — starting in polling mode');
-      // Delete any existing webhook so polling works cleanly
       await bot.telegram.deleteWebhook();
       await bot.launch();
       console.log('Bot started in polling mode');
@@ -130,6 +141,5 @@ bot.catch((err, ctx) => {
   }
 })();
 
-// Graceful shutdown
-process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGINT',  () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));

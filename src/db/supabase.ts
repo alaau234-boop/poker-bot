@@ -68,13 +68,76 @@ export async function getPlayerById(playerId: number): Promise<Player | null> {
   return data as Player | null;
 }
 
-/** Saves or updates the player's poker-app ID. */
-export async function setPlayerAppId(playerId: number, playerAppId: string): Promise<void> {
-  const { error } = await supabase
+/**
+ * Looks up a player by their in-game player_app_id.
+ * If found, updates the stored telegram_id (for DMs) if it has changed.
+ * If not found by app ID, falls back to telegram_id and sets the app ID.
+ * If neither exists, creates a fresh player record.
+ */
+export async function getOrCreatePlayerByAppId(
+  playerAppId: string,
+  telegramId: number,
+): Promise<Player> {
+  // 1. Try to find by player_app_id
+  const { data: byAppId, error: e1 } = await supabase
     .from('players')
-    .update({ player_app_id: playerAppId })
-    .eq('id', playerId);
+    .select('*')
+    .eq('player_app_id', playerAppId)
+    .maybeSingle();
+  if (e1) throw e1;
+
+  if (byAppId) {
+    if ((byAppId as Player).telegram_id !== telegramId) {
+      const { data, error } = await supabase
+        .from('players')
+        .update({ telegram_id: telegramId })
+        .eq('id', (byAppId as Player).id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Player;
+    }
+    return byAppId as Player;
+  }
+
+  // 2. Try to find by telegram_id and set the app ID
+  const { data: byTelegram, error: e2 } = await supabase
+    .from('players')
+    .select('*')
+    .eq('telegram_id', telegramId)
+    .maybeSingle();
+  if (e2) throw e2;
+
+  if (byTelegram) {
+    const { data, error } = await supabase
+      .from('players')
+      .update({ player_app_id: playerAppId })
+      .eq('id', (byTelegram as Player).id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data as Player;
+  }
+
+  // 3. Create new player
+  const { data, error } = await supabase
+    .from('players')
+    .insert({ telegram_id: telegramId, player_app_id: playerAppId, balance: 0 })
+    .select()
+    .single();
   if (error) throw error;
+  return data as Player;
+}
+
+/** Looks up a player by their in-game player_app_id (no telegram_id required). */
+export async function getPlayerByAppId(playerAppId: string): Promise<Player | null> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('player_app_id', playerAppId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as Player | null;
 }
 
 // ── Transactions ──────────────────────────────────────────────────────────────
@@ -84,6 +147,7 @@ export async function createTransaction(
   type: 'deposit' | 'withdraw',
   amount: number,
   receiptFileId?: string,
+  bankAccount?: string,
 ): Promise<Transaction> {
   const { data, error } = await supabase
     .from('transactions')
@@ -93,6 +157,7 @@ export async function createTransaction(
       amount,
       status: 'pending',
       receipt_file_id: receiptFileId ?? null,
+      bank_account: bankAccount ?? null,
     })
     .select()
     .single();
