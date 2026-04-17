@@ -5,9 +5,9 @@ import { Club } from '../types';
 export function buildStartKeyboard() {
   return {
     inline_keyboard: [
+      [{ text: 'Register / Join Club',     callback_data: 'join_btn' }],
       [{ text: 'Deposit',                  callback_data: 'deposit_btn' }],
       [{ text: 'Withdraw',                 callback_data: 'withdraw_btn' }],
-      [{ text: 'Request ID / Join Club',   callback_data: 'join_btn' }],
       [{ text: 'Our Clubs',                callback_data: 'clubs_btn' }],
     ],
   };

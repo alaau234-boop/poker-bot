@@ -22,6 +22,7 @@ import {
 import { handleJoinButton, handleJoinPlayerId } from './commands/join';
 import { handleClubsButton }    from './commands/clubs';
 import { handleAdminApproval }  from './handlers/adminApproval';
+import { handleJoinApproval }   from './handlers/joinApproval';
 
 // ── Environment validation ────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ bot.action('clubs_btn',        handleClubsButton);
 // ── Inline keyboard actions (admin approve / reject) ─────────────────────────
 
 bot.action(/^(approve|reject)_(dep|wd)_\d+$/, handleAdminApproval);
+bot.action(/^(approve|reject)_join_\d+$/,      handleJoinApproval);
 
 // ── Message handlers (session-driven flows) ───────────────────────────────────
 

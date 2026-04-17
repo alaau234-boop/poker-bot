@@ -266,6 +266,25 @@ ON CONFLICT (key) DO UPDATE
       description = EXCLUDED.description;
 
 -- ============================================================
+-- Join requests — tracks pending Player ID registrations
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS join_requests (
+  id            BIGSERIAL PRIMARY KEY,
+  telegram_id   BIGINT NOT NULL,
+  player_app_id TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  message_id    BIGINT,
+  admin_id      BIGINT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE join_requests DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_join_requests_telegram_id ON join_requests(telegram_id);
+CREATE INDEX IF NOT EXISTS idx_join_requests_status      ON join_requests(status);
+
+-- ============================================================
 -- Join / Request ID flow — new bot_messages keys
 -- ============================================================
 
@@ -281,8 +300,32 @@ INSERT INTO bot_messages (key, value, description) VALUES
 
   ('join_confirmed',
    '✅ Your Player ID has been registered. You can now make deposits and withdrawals.',
-   'Shown after player ID submitted in join flow')
-ON CONFLICT (key) DO NOTHING;
+   'Shown after player ID submitted in join flow'),
+
+  ('not_registered',
+   '⚠️ You need to register your Player ID before you can deposit or withdraw.'
+   || E'\n\n' || 'Please use the <b>Register / Join Club</b> option first.',
+   'Shown when unregistered user tries to deposit or withdraw'),
+
+  ('already_registered',
+   '✅ You are already registered with Player ID: <b>{player_id}</b>',
+   'Shown when user tries to register again but already has a Player ID'),
+
+  ('join_submitted',
+   '✅ Request received! Awaiting admin approval.'
+   || E'\n\n' || '⏳ Please avoid sending multiple messages. Thank you for your patience!',
+   'Shown after player submits Player ID for registration'),
+
+  ('join_approved',
+   '✅ Your Player ID has been approved! You can now deposit and withdraw.',
+   'DM sent to player when join request is approved'),
+
+  ('join_rejected',
+   '❌ Your Player ID request was rejected. Please contact admin.',
+   'DM sent to player when join request is rejected')
+ON CONFLICT (key) DO UPDATE
+  SET value       = EXCLUDED.value,
+      description = EXCLUDED.description;
 
 -- ============================================================
 -- Add emojis to all bot messages — DO UPDATE so existing

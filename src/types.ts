@@ -53,6 +53,16 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface JoinRequest {
+  id: number;
+  telegram_id: number;
+  player_app_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  message_id: number | null;
+  admin_id: number | null;
+  created_at: string;
+}
+
 export interface Club {
   id: number;
   name: string;

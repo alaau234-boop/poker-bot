@@ -2,6 +2,7 @@ import {
   createTransaction,
   getBotMessage,
   getOrCreatePlayerByAppId,
+  getPlayerByTelegramId,
   updateTransactionMessageId,
 } from '../db/supabase';
 import { BotContext } from '../types';
@@ -11,6 +12,24 @@ import { mainMenuMarkup } from '../keyboards';
 
 export async function handleWithdrawButton(ctx: BotContext): Promise<void> {
   try {
+    if (!ctx.from) return;
+
+    const player = await getPlayerByTelegramId(ctx.from.id);
+    if (!player?.player_app_id) {
+      const text = await getBotMessage('not_registered');
+      await ctx.editMessageText(text, {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [[
+            { text: 'Register / Join Club', callback_data: 'join_btn' },
+            { text: 'Main Menu',            callback_data: 'main_menu' },
+          ]],
+        },
+      });
+      await ctx.answerCbQuery();
+      return;
+    }
+
     const text = await getBotMessage('withdraw_instructions');
     await ctx.editMessageText(text, {
       parse_mode: 'HTML',

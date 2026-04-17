@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Club, Player, Transaction } from '../types';
+import { Club, JoinRequest, Player, Transaction } from '../types';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -138,6 +138,80 @@ export async function getPlayerByAppId(playerAppId: string): Promise<Player | nu
     .maybeSingle();
   if (error) throw error;
   return data as Player | null;
+}
+
+// ── Join requests ─────────────────────────────────────────────────────────────
+
+export async function createJoinRequest(
+  telegramId: number,
+  playerAppId: string,
+): Promise<JoinRequest> {
+  const { data, error } = await supabase
+    .from('join_requests')
+    .insert({ telegram_id: telegramId, player_app_id: playerAppId, status: 'pending' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as JoinRequest;
+}
+
+export async function getJoinRequestById(requestId: number): Promise<JoinRequest | null> {
+  const { data, error } = await supabase
+    .from('join_requests')
+    .select('*')
+    .eq('id', requestId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as JoinRequest | null;
+}
+
+export async function updateJoinRequestMessageId(requestId: number, messageId: number): Promise<void> {
+  const { error } = await supabase
+    .from('join_requests')
+    .update({ message_id: messageId })
+    .eq('id', requestId);
+  if (error) throw error;
+}
+
+export async function approveJoinRequest(
+  requestId: number,
+  adminId: number,
+  telegramId: number,
+  playerAppId: string,
+): Promise<void> {
+  const { error: reqErr } = await supabase
+    .from('join_requests')
+    .update({ status: 'approved', admin_id: adminId })
+    .eq('id', requestId);
+  if (reqErr) throw reqErr;
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from('players')
+    .select('id')
+    .eq('telegram_id', telegramId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+
+  if (existing) {
+    const { error } = await supabase
+      .from('players')
+      .update({ player_app_id: playerAppId })
+      .eq('telegram_id', telegramId);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('players')
+      .insert({ telegram_id: telegramId, player_app_id: playerAppId, balance: 0 });
+    if (error) throw error;
+  }
+}
+
+export async function rejectJoinRequest(requestId: number, adminId: number): Promise<void> {
+  const { error } = await supabase
+    .from('join_requests')
+    .update({ status: 'rejected', admin_id: adminId })
+    .eq('id', requestId);
+  if (error) throw error;
 }
 
 // ── Transactions ──────────────────────────────────────────────────────────────
