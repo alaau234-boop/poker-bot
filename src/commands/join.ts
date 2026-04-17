@@ -97,7 +97,6 @@ export async function handleJoinPlayerId(ctx: BotContext): Promise<void> {
     const adminMsg = await ctx.telegram.sendMessage(
       groupId,
       `<b>New Player ID Registration</b>\n\n` +
-      `Telegram ID: <code>${ctx.from.id}</code>\n` +
       `Player ID: <code>${playerAppId}</code>\n\n` +
       `Request #${request.id}`,
       {
@@ -144,7 +143,6 @@ export async function handleChangePlayerId(ctx: BotContext): Promise<void> {
     const adminMsg = await ctx.telegram.sendMessage(
       groupId,
       `<b>Player ID Change Request</b>\n\n` +
-      `Telegram ID: <code>${ctx.from.id}</code>\n` +
       `Current Player ID: <code>${oldPlayerAppId}</code>\n` +
       `New Player ID: <code>${newPlayerAppId}</code>\n\n` +
       `Request #${request.id}`,
