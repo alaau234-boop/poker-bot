@@ -168,17 +168,6 @@ export async function getActiveClubs(): Promise<Club[]> {
 
 // ── Settings & bot messages ───────────────────────────────────────────────────
 
-/** Returns the value for a settings key, or null if not found. */
-export async function getSetting(key: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('settings')
-    .select('value')
-    .eq('key', key)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.value ?? null;
-}
-
 /** Escapes special HTML characters so user-supplied values are safe in HTML messages. */
 function escapeHtml(text: string): string {
   return text
@@ -212,15 +201,6 @@ export async function getBotMessage(
   }
 
   return message;
-}
-
-/** Reads admin_telegram_id from the settings table. */
-export async function getAdminTelegramId(): Promise<number> {
-  const value = await getSetting('admin_telegram_id');
-  if (!value) throw new Error('admin_telegram_id not found in settings table');
-  const id = parseInt(value, 10);
-  if (isNaN(id)) throw new Error(`Invalid admin_telegram_id in settings: "${value}"`);
-  return id;
 }
 
 /** Returns true if the given Telegram ID belongs to an active admin. */
