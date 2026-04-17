@@ -90,28 +90,32 @@ bot.catch((err, ctx) => {
   try {
     if (PUBLIC_DOMAIN) {
       // ── Webhook mode (production on Railway / any host) ───────────────────
-      // Include the bot token in the path as a simple secret to prevent
-      // unauthorized webhook requests from reaching the bot.
       const webhookPath = `/webhook/${BOT_TOKEN}`;
-      const webhookUrl = `https://${PUBLIC_DOMAIN}${webhookPath}`;
+      const webhookUrl  = `https://${PUBLIC_DOMAIN}${webhookPath}`;
 
       const app = express();
       app.use(express.json());
-
-      // Telegram updates land here
       app.use(bot.webhookCallback(webhookPath));
+      app.get('/', (_req, res) => res.json({ status: 'ok' }));
 
-      // Health check endpoint
-      app.get('/', (_req, res) => {
-        res.json({ status: 'ok', service: 'poker-chip-bot' });
+      // Start the HTTP server first so the port is open before Telegram
+      // tries to deliver the first update after setWebhook is called.
+      await new Promise<void>((resolve) => {
+        app.listen(PORT, () => {
+          console.log(`Server listening on port ${PORT}`);
+          resolve();
+        });
       });
 
-      await bot.telegram.setWebhook(webhookUrl);
-      console.log(`Webhook set → ${webhookUrl}`);
+      // Register the webhook now that the server is accepting connections.
+      console.log(`Registering webhook → ${webhookUrl}`);
+      const ok = await bot.telegram.setWebhook(webhookUrl);
+      console.log(`setWebhook result: ${ok}`);
 
-      app.listen(PORT, () => {
-        console.log(`Server listening on port ${PORT}`);
-      });
+      // Confirm what Telegram has on record.
+      const info = await bot.telegram.getWebhookInfo();
+      console.log(`Webhook URL on Telegram: ${info.url}`);
+      console.log(`Pending updates: ${info.pending_update_count}`);
     } else {
       // ── Long-polling mode (local development) ────────────────────────────
       console.log('PUBLIC_DOMAIN not set — starting in polling mode');
