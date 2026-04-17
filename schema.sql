@@ -351,6 +351,23 @@ ON CONFLICT (key) DO UPDATE
       description = EXCLUDED.description;
 
 -- ============================================================
+-- Remove obsolete bot_message keys no longer used by the bot
+-- ============================================================
+
+DELETE FROM bot_messages WHERE key IN (
+  'deposit_prompt',
+  'deposit_receipt_prompt',
+  'deposit_playerid_prompt',
+  'withdraw_prompt',
+  'withdraw_appid_prompt',
+  'balance_message',
+  'balance_playerid_prompt',
+  'no_account_message',
+  'already_registered',
+  'join_confirmed'
+);
+
+-- ============================================================
 -- Add emojis to all bot messages — DO UPDATE so existing
 -- deployments also receive the updated text.
 -- ============================================================

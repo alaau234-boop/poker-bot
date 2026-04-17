@@ -16,7 +16,7 @@ export async function handleClubsButton(ctx: BotContext): Promise<void> {
       (c) =>
         `<b>${c.name}</b>\n` +
         `Club ID: <code>${c.club_id}</code>\n` +
-        `Rate: ${c.chip_rate} chips per unit`,
+        `Rate: ${c.chip_rate} chips per MVR`,
     );
 
     await ctx.editMessageText(
