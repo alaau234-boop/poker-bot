@@ -1,10 +1,10 @@
 import {
   creditBalance,
   debitBalance,
-  getAdminTelegramId,
   getBotMessage,
   getPlayerById,
   getTransactionById,
+  isAdmin,
   updateTransactionStatus,
 } from '../db/supabase';
 import { BotContext } from '../types';
@@ -20,13 +20,12 @@ import { BotContext } from '../types';
 export async function handleAdminApproval(ctx: BotContext): Promise<void> {
   if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return;
 
-  const adminTelegramId = await getAdminTelegramId();
-  const groupId = parseInt(process.env.GROUP_ID!);
-
-  if (!ctx.from || ctx.from.id !== adminTelegramId) {
+  if (!ctx.from || !(await isAdmin(ctx.from.id))) {
     await ctx.answerCbQuery('⛔ Unauthorized');
     return;
   }
+
+  const actingAdminId = ctx.from.id;
 
   const data = ctx.callbackQuery.data;
   const parts = data.split('_'); // ['approve'|'reject', 'dep'|'wd', '<id>']
@@ -66,13 +65,13 @@ export async function handleAdminApproval(ctx: BotContext): Promise<void> {
     const playerTag = player.username ? `@${player.username}` : `User ${player.telegram_id}`;
 
     if (action === 'approve') {
-      await handleApprove(ctx, transaction.id, type, player.id, transaction.amount, playerTag, groupId, adminTelegramId);
+      await handleApprove(ctx, transaction.id, type, player.id, transaction.amount, playerTag, player.telegram_id, actingAdminId);
     } else {
-      await updateTransactionStatus(txId, 'rejected', adminTelegramId);
+      await updateTransactionStatus(txId, 'rejected', actingAdminId);
 
       const msgKey = type === 'dep' ? 'deposit_rejected' : 'withdraw_rejected';
       const text = await getBotMessage(msgKey, { username: playerTag, amount: String(transaction.amount) });
-      await ctx.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
+      await ctx.telegram.sendMessage(player.telegram_id, text, { parse_mode: 'HTML' });
 
       await ctx.answerCbQuery('❌ Request rejected');
     }
@@ -93,7 +92,7 @@ async function handleApprove(
   playerId: number,
   amount: number,
   playerTag: string,
-  groupId: number,
+  playerTelegramId: number,
   adminId: number,
 ): Promise<void> {
   if (type === 'dep') {
@@ -101,7 +100,7 @@ async function handleApprove(
     await updateTransactionStatus(txId, 'approved', adminId);
 
     const text = await getBotMessage('deposit_approved', { username: playerTag, amount: String(amount) });
-    await ctx.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
+    await ctx.telegram.sendMessage(playerTelegramId, text, { parse_mode: 'HTML' });
 
     await ctx.answerCbQuery('✅ Deposit approved');
   } else {
@@ -111,7 +110,7 @@ async function handleApprove(
       await updateTransactionStatus(txId, 'rejected', adminId);
 
       const text = await getBotMessage('insufficient_balance', { username: playerTag, amount: String(amount) });
-      await ctx.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
+      await ctx.telegram.sendMessage(playerTelegramId, text, { parse_mode: 'HTML' });
 
       await ctx.answerCbQuery('Insufficient balance — request rejected');
       return;
@@ -120,7 +119,7 @@ async function handleApprove(
     await updateTransactionStatus(txId, 'approved', adminId);
 
     const text = await getBotMessage('withdraw_approved', { username: playerTag, amount: String(amount) });
-    await ctx.telegram.sendMessage(groupId, text, { parse_mode: 'HTML' });
+    await ctx.telegram.sendMessage(playerTelegramId, text, { parse_mode: 'HTML' });
 
     await ctx.answerCbQuery('✅ Withdrawal approved');
   }

@@ -59,8 +59,7 @@ bot.on(message('photo'), async (ctx) => {
 });
 
 // Text → deposit / withdraw conversational steps
-bot.on(message('text'), async (ctx, next) => {
-  if (ctx.message.text?.startsWith('/')) return next();
+bot.on(message('text'), async (ctx) => {
   switch (ctx.session.step) {
     case 'waiting_deposit_amount':
       await handleDepositAmount(ctx);

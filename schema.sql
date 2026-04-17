@@ -122,6 +122,33 @@ CREATE TABLE IF NOT EXISTS bot_messages (
 
 ALTER TABLE bot_messages DISABLE ROW LEVEL SECURITY;
 
+-- ============================================================
+-- Admins — Telegram users allowed to approve/reject transactions
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS admins (
+  id          BIGSERIAL PRIMARY KEY,
+  telegram_id BIGINT UNIQUE NOT NULL,
+  username    TEXT,
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE admins DISABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_admins_telegram_id ON admins(telegram_id);
+
+-- Seed: promote the existing admin_telegram_id setting as the first admin
+INSERT INTO admins (telegram_id, username)
+SELECT value::BIGINT, 'admin'
+FROM settings
+WHERE key = 'admin_telegram_id'
+ON CONFLICT (telegram_id) DO NOTHING;
+
+-- ============================================================
+-- Bot messages — editable message templates with placeholders
+-- ============================================================
+
 INSERT INTO bot_messages (key, value, description) VALUES
   ('deposit_prompt',         'How many chips are you depositing? Please enter the amount:',                                         'Shown after bank details'),
   ('deposit_receipt_prompt', 'Got it — {amount} chips. Now please upload your payment receipt as a photo.',                        'Shown after amount entered'),

@@ -1,6 +1,5 @@
 import {
   createTransaction,
-  getAdminTelegramId,
   getBotMessage,
   getOrCreatePlayer,
   setPlayerAppId,
@@ -73,11 +72,11 @@ export async function handleWithdrawAppId(ctx: BotContext): Promise<void> {
 
     const transaction = await createTransaction(player.id, 'withdraw', amount);
 
-    const adminId = await getAdminTelegramId();
+    const groupId = parseInt(process.env.GROUP_ID!);
     const playerTag = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
 
     const adminMsg = await ctx.telegram.sendMessage(
-      adminId,
+      groupId,
       `<b>💸 New Withdrawal Request</b>\n\n` +
         `👤 Player: ${playerTag}\n` +
         `🆔 Telegram ID: ${ctx.from.id}\n` +

@@ -222,3 +222,15 @@ export async function getAdminTelegramId(): Promise<number> {
   if (isNaN(id)) throw new Error(`Invalid admin_telegram_id in settings: "${value}"`);
   return id;
 }
+
+/** Returns true if the given Telegram ID belongs to an active admin. */
+export async function isAdmin(telegramId: number): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('admins')
+    .select('id')
+    .eq('telegram_id', telegramId)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}

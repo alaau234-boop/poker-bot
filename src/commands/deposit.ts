@@ -3,7 +3,6 @@ import { Message, Update } from 'telegraf/types';
 import {
   createTransaction,
   getActiveClubs,
-  getAdminTelegramId,
   getBotMessage,
   getOrCreatePlayer,
   updateTransactionMessageId,
@@ -89,10 +88,10 @@ export async function handleReceiptPhoto(
     const player = await getOrCreatePlayer(ctx.from.id, ctx.from.username ?? null);
     const transaction = await createTransaction(player.id, 'deposit', amount, fileId);
 
-    const adminId = await getAdminTelegramId();
+    const groupId = parseInt(process.env.GROUP_ID!);
     const playerTag = ctx.from.username ? `@${ctx.from.username}` : ctx.from.first_name;
 
-    const adminMsg = await ctx.telegram.sendPhoto(adminId, fileId, {
+    const adminMsg = await ctx.telegram.sendPhoto(groupId, fileId, {
       caption:
         `<b>💰 New Deposit Request</b>\n\n` +
         `👤 Player: ${playerTag}\n` +
