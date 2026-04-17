@@ -11,7 +11,6 @@ export async function handleBalanceButton(ctx: BotContext): Promise<void> {
     const text = await getBotMessage('balance_playerid_prompt');
     await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: mainMenuMarkup });
     await ctx.answerCbQuery();
-    await ctx.reply('⬇️');
   } catch (err) {
     console.error('[balance_btn]', err);
     await ctx.answerCbQuery('Something went wrong.');

@@ -39,7 +39,6 @@ export async function handleDepositButton(ctx: BotContext): Promise<void> {
 
     await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: mainMenuMarkup });
     await ctx.answerCbQuery();
-    await ctx.reply('⬇️');
   } catch (err) {
     console.error('[deposit_btn]', err);
     await ctx.answerCbQuery('Something went wrong.');
@@ -55,7 +54,6 @@ async function processReceipt(ctx: BotContext, fileId: string, isDocument: boole
 
   const text = await getBotMessage('deposit_amount_prompt');
   await ctx.reply(text, { parse_mode: 'HTML' });
-  await ctx.reply('⬇️');
 }
 
 export async function handleDepositPhoto(
@@ -87,7 +85,6 @@ export async function handleDepositAmount(ctx: BotContext): Promise<void> {
 
   const text = await getBotMessage('deposit_playerid_prompt');
   await ctx.reply(text, { parse_mode: 'HTML' });
-  await ctx.reply('⬇️');
 }
 
 // ── Step 3 — player ID → create transaction ───────────────────────────────────
