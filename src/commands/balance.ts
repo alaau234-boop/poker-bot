@@ -6,7 +6,7 @@ import { mainMenuMarkup } from '../keyboards';
 
 export async function handleBalanceButton(ctx: BotContext): Promise<void> {
   try {
-    ctx.session.step = 'waiting_balance_player_id';
+    ctx.session.step = 'waiting_join_player_id';
 
     const text = await getBotMessage('balance_playerid_prompt');
     await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: mainMenuMarkup });

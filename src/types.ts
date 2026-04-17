@@ -10,7 +10,7 @@ export interface SessionData {
     | 'waiting_withdraw_amount'
     | 'waiting_withdraw_player_id'
     | 'waiting_withdraw_bank_account'
-    | 'waiting_balance_player_id';
+    | 'waiting_join_player_id';
 
   /** Telegram file_id of the uploaded deposit receipt. */
   depositReceiptFileId?: string;

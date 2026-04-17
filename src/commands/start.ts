@@ -5,10 +5,10 @@ import { Club } from '../types';
 export function buildStartKeyboard() {
   return {
     inline_keyboard: [
-      [{ text: 'Deposit',    callback_data: 'deposit_btn' }],
-      [{ text: 'Withdraw',   callback_data: 'withdraw_btn' }],
-      [{ text: 'My Balance', callback_data: 'balance_btn' }],
-      [{ text: 'Our Clubs',  callback_data: 'clubs_btn' }],
+      [{ text: 'Deposit',                  callback_data: 'deposit_btn' }],
+      [{ text: 'Withdraw',                 callback_data: 'withdraw_btn' }],
+      [{ text: 'Request ID / Join Club',   callback_data: 'join_btn' }],
+      [{ text: 'Our Clubs',                callback_data: 'clubs_btn' }],
     ],
   };
 }
@@ -18,7 +18,7 @@ function buildClubsText(clubs: Club[]): string {
   return clubs
     .map(
       (c) =>
-        `<b>${c.name}</b>\n` +
+        `🎰 <b>${c.name}</b>\n` +
         `Club ID: <code>${c.club_id}</code>\n` +
         `Rate: ${c.chip_rate} chips per unit`,
     )

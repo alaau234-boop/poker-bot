@@ -37,6 +37,7 @@ export async function handleProceedWithdraw(ctx: BotContext): Promise<void> {
     const text = await getBotMessage('withdraw_amount_prompt');
     await ctx.editMessageText(text, { parse_mode: 'HTML', reply_markup: mainMenuMarkup });
     await ctx.answerCbQuery();
+    await ctx.reply('👇 type below.');
   } catch (err) {
     console.error('[proceed_withdraw]', err);
     await ctx.answerCbQuery('Something went wrong.');
@@ -59,6 +60,7 @@ export async function handleWithdrawAmount(ctx: BotContext): Promise<void> {
 
   const text = await getBotMessage('withdraw_playerid_prompt');
   await ctx.reply(text, { parse_mode: 'HTML' });
+  await ctx.reply('👇 type below.');
 }
 
 // ── Step 2 — player ID ────────────────────────────────────────────────────────
@@ -77,6 +79,7 @@ export async function handleWithdrawPlayerId(ctx: BotContext): Promise<void> {
 
   const text = await getBotMessage('withdraw_bankaccount_prompt');
   await ctx.reply(text, { parse_mode: 'HTML' });
+  await ctx.reply('👇 type below.');
 }
 
 // ── Step 3 — bank account → create transaction ────────────────────────────────

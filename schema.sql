@@ -264,3 +264,90 @@ INSERT INTO bot_messages (key, value, description) VALUES
 ON CONFLICT (key) DO UPDATE
   SET value       = EXCLUDED.value,
       description = EXCLUDED.description;
+
+-- ============================================================
+-- Join / Request ID flow — new bot_messages keys
+-- ============================================================
+
+INSERT INTO bot_messages (key, value, description) VALUES
+  ('join_instructions',
+   '🎰 To join a club, use the Club ID below to request access in the app.'
+   || E'\n\n' || 'Once you have joined and received your Player ID, enter it below to register with us.',
+   'Shown when Request ID / Join Club button is tapped'),
+
+  ('join_playerid_prompt',
+   'Enter your Player ID:',
+   'Asked after join instructions shown'),
+
+  ('join_confirmed',
+   '✅ Your Player ID has been registered. You can now make deposits and withdrawals.',
+   'Shown after player ID submitted in join flow')
+ON CONFLICT (key) DO NOTHING;
+
+-- ============================================================
+-- Add emojis to all bot messages — DO UPDATE so existing
+-- deployments also receive the updated text.
+-- ============================================================
+
+INSERT INTO bot_messages (key, value, description) VALUES
+  ('deposit_instructions',
+   'To deposit, kindly transfer funds to the bank details shown below and send us your payment receipt.'
+   || E'\n\n' || 'Minimum deposit: 20 MVR'
+   || E'\n\n' || 'Bank details may be updated from time to time. Please confirm before sending.'
+   || E'\n\n' || '📸 Kindly share your deposit receipt (photo, screenshot, or document).',
+   'Shown when Deposit button is tapped (bank details appended by bot)'),
+
+  ('deposit_amount_prompt',
+   '💰 Please enter the deposit amount:',
+   'Asked after receipt is uploaded'),
+
+  ('deposit_submitted',
+   '✅ Receipt submitted! Awaiting admin approval.',
+   'Shown after receipt submitted'),
+
+  ('deposit_approved',
+   '✅ Your deposit of {amount} chips has been approved! Your balance has been updated.',
+   'DM sent to player on deposit approval'),
+
+  ('deposit_rejected',
+   '❌ Your deposit was rejected. Please contact admin.',
+   'DM sent to player on deposit rejection'),
+
+  ('withdraw_instructions',
+   '⚠️ Before you proceed:'
+   || E'\n\n' || E'\u2022 The minimum withdrawal is 200 MVR'
+   || E'\n' || E'\u2022 Withdrawals are sent to the same bank account you deposited from',
+   'Shown when Withdraw button is tapped'),
+
+  ('withdraw_amount_prompt',
+   '💰 How much would you like to withdraw?',
+   'Asked after user clicks Proceed'),
+
+  ('withdraw_submitted',
+   '⏳ Withdrawal request submitted.'
+   || E'\n' || 'Your funds will be transferred within 10-30 minutes.'
+   || E'\n\n' || 'Please avoid sending multiple messages. Repeated messages may slow down processing. Thank you for your patience!',
+   'Confirmation shown after withdrawal submitted'),
+
+  ('withdraw_approved',
+   '✅ Your withdrawal of {amount} chips has been approved!',
+   'DM sent to player on withdrawal approval'),
+
+  ('withdraw_rejected',
+   '❌ Your withdrawal request was rejected. Please contact admin.',
+   'DM sent to player on withdrawal rejection'),
+
+  ('insufficient_balance',
+   '❌ Insufficient balance for this withdrawal.',
+   'DM sent when withdrawal balance check fails'),
+
+  ('balance_message',
+   '💰 Balance for <b>{player_id}</b>: {balance} chips',
+   'Shown after balance lookup'),
+
+  ('no_account_message',
+   '⚠️ No account found for that Player ID.',
+   'Shown when player_app_id lookup returns nothing')
+ON CONFLICT (key) DO UPDATE
+  SET value       = EXCLUDED.value,
+      description = EXCLUDED.description;
